@@ -83,6 +83,8 @@ export function providerMenuCopy(
       return { bedrock: "record the manual Copilot BYOK provider setup" };
     case "cursor":
       return { bedrock: "record the manual Cursor provider setup" };
+    case "antigravity":
+      return { bedrock: "record the manual Antigravity provider setup" };
   }
 }
 export type ProviderPendingStatus = "pending" | "done";
@@ -475,6 +477,7 @@ export function readConfigDiagnosticRecords(harnessRoot: string): ConfigDiagnost
   }
   const distribution = value.distribution;
   if (
+    distribution !== "antigravity" &&
     distribution !== "claude" &&
     distribution !== "codex" &&
     distribution !== "copilot" &&
@@ -797,6 +800,11 @@ const HARNESS_CLI: Record<
     install: string;
   }
 > = {
+  antigravity: {
+    command: "agy",
+    required: false,
+    install: "Install the Antigravity CLI (`agy`) and ensure `agy --version` works; IDE-only installs may omit it.",
+  },
   claude: {
     command: "claude",
     required: true,
@@ -2263,7 +2271,7 @@ export function workspaceSiblingIssues(
       reason: "the Codex skills sibling",
     });
   }
-  if (harness === "opencode" || harness === "copilot") {
+  if (harness === "opencode" || harness === "copilot" || harness === "antigravity") {
     required.push({
       id: `${harness}-engine-sibling-missing`,
       path: join(projectDir, ".aidlc"),
@@ -2333,6 +2341,7 @@ export function trustFilesForHarness(
     );
   }
   if (harness === "copilot") files.push(join(projectDir, ".github", "hooks", "aidlc.json"));
+  if (harness === "antigravity") files.push(join(projectDir, ".agents", "hooks.json"));
   if (harness === "opencode") files.push(join(projectDir, "opencode.json"));
   return [...new Set(files)];
 }

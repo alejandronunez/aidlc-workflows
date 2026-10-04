@@ -395,7 +395,10 @@ export function resolveSkillsPath(
   if (distribution === "copilot") {
     return join(distributionRoot, ".github", "skills", ...segments);
   }
-  if (distribution === "codex" && !existsSync(harnessSkills)) {
+  if (
+    (distribution === "codex" || distribution === "antigravity") &&
+    !existsSync(harnessSkills)
+  ) {
     return join(distributionRoot, ".agents", "skills", ...segments);
   }
   return harnessSkills;

@@ -53,6 +53,7 @@ const HARNESS_CAPABILITIES = {
       mode: "manifest",
       fills: "onboarding.fills.ts",
       dist: "AGENTS.md",
+      harnessDist: "AGENTS.md",
     },
     rootFiles: [".gitignore", "AGENTS.md"],
     skillsRoot: ".agents/skills",
@@ -307,7 +308,7 @@ function validateManifest(
     (capabilities.memoryInclude === "claude-import") !==
       manifest.harnessFiles.some((file) => file.dst === "rules/aidlc.md") ||
     (capabilities.memoryInclude === "codex-env") !==
-      (manifest.orchestratorSkillPath === ".agents/skills/aidlc/SKILL.md") ||
+      (manifest.name === "codex" && manifest.orchestratorSkillPath === ".agents/skills/aidlc/SKILL.md") ||
     (capabilities.memoryInclude === "opencode-instructions") !==
       manifest.harnessFiles.some((file) => file.dst === "opencode.json") ||
     (capabilities.memoryInclude === "copilot-agents-md") !==

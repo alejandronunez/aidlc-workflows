@@ -40,6 +40,7 @@ export const MODEL_GROUPS = {
 
 export type ModelGroup = keyof typeof MODEL_GROUPS;
 export type ModelHarness =
+  | "antigravity"
   | "claude"
   | "codex"
   | "copilot"
@@ -159,6 +160,13 @@ export const HARNESS_HONESTY = Object.freeze({
     groupEffort: false,
     message:
       "GitHub Copilot cannot pin one portable agent model or effort across CLI and IDE; agents inherit the session.",
+  }),
+  antigravity: Object.freeze({
+    model: false,
+    effort: false,
+    groupEffort: false,
+    message:
+      "Google Antigravity cannot pin one portable agent model or effort across CLI and IDE; agents inherit the session.",
   }),
 });
 
@@ -348,7 +356,9 @@ export function profileGroups(
 }
 
 function tierHarness(harness: ModelHarness): TierHarness {
-  return harness === "kiro-ide" ? "kiro" : harness;
+  if (harness === "kiro-ide") return "kiro";
+  if (harness === "antigravity") return "copilot";
+  return harness;
 }
 
 function projectedEffort(value: ReturnType<typeof projectTier>): ModelEffort | undefined {

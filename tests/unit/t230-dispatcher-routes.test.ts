@@ -2011,8 +2011,8 @@ describe("t230 native review-brief dispatch", () => {
       expect(stopped.status, `${stopped.stdout}\n${stopped.stderr}`).toBe(0);
       const feedback = JSON.parse(stopped.stdout) as { decision: string; reason: string };
       expect(feedback.decision).toBe("block");
-      const recovery = /`([^`]+ next)`/.exec(feedback.reason)?.[1];
-      expect(recovery).toBe("aidlc engine orchestrate next");
+      const recovery = /`([^`]+ (?:next|continue \S+))`/.exec(feedback.reason)?.[1];
+      expect(recovery).toMatch(/^aidlc engine orchestrate (?:next|continue \S+)$/);
       let command = recovery!;
       let kind = "";
       for (let part = 0; part < 20; part++) {

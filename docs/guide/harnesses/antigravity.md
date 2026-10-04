@@ -61,5 +61,5 @@ Open the project in Antigravity IDE (or start `agy` in your terminal) and descri
 ## What's different on this harness
 
 - **Questions render as numbered prose options** when interactive multi-choice widgets are not active; the questions file with `[Answer]:` tags remains the canonical source of truth.
-- **Hooks ride `.agents/hooks.json`** through the Antigravity adapter (`.aidlc/hooks/aidlc-antigravity-adapter.ts`), normalizing Antigravity hook events (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PreCompact`, `SubagentStop`, `Stop`) into core hook contracts.
+- **Hooks ride `.agents/hooks.json`** through the Antigravity adapter (`.aidlc/hooks/aidlc-antigravity-adapter.ts`), normalizing Antigravity hook events (`PreToolUse`, `PostToolUse`, `PreInvocation`, `Stop`) and tool calls (`run_command`, `write_to_file`, `replace_file_content`, `view_file`, etc.) into core hook contracts.
 - **Session model inheritance**: Personas project with no hard-coded model pins, cleanly adopting your session-level model configuration.

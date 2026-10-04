@@ -64,13 +64,10 @@ describe("t345 dist/antigravity packaging parity + shell shape", () => {
     expect(existsSync(join(SHELL, "skills", "aidlc", "SKILL.md"))).toBe(true);
 
     const hooksJson = JSON.parse(readFileSync(join(SHELL, "hooks.json"), "utf8"));
-    expect(hooksJson.hooks).toBeDefined();
-    expect(hooksJson.hooks.SessionStart).toBeDefined();
-    expect(hooksJson.hooks.UserPromptSubmit).toBeDefined();
-    expect(hooksJson.hooks.PreToolUse).toBeDefined();
-    expect(hooksJson.hooks.PostToolUse).toBeDefined();
-    expect(hooksJson.hooks.SubagentStop).toBeDefined();
-    expect(hooksJson.hooks.Stop).toBeDefined();
+    expect(hooksJson["aidlc-pre-tool"]?.PreToolUse).toBeDefined();
+    expect(hooksJson["aidlc-post-tool"]?.PostToolUse).toBeDefined();
+    expect(hooksJson["aidlc-pre-invocation"]?.PreInvocation).toBeDefined();
+    expect(hooksJson["aidlc-stop"]?.Stop).toBeDefined();
   });
 
   test("3: onboarding AGENTS.md is emitted in root", () => {

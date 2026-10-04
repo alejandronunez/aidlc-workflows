@@ -32,7 +32,7 @@ const RUNTIME_RECORD_MENTION = /(?:^|[\\/'"`\s])\.(?:aidlc-sessions|aidlc-plan-a
 // Windows spellings classify like POSIX ones.
 const AUDIT_TRAIL_PATH =
   /(?:^|[\\/])aidlc[\\/]spaces[\\/][^\\/]+[\\/]intents[\\/](?:[^\\/]+[\\/])?audit(?:[\\/]|$)/i;
-const HOOK_FILE = /(?:^|[\\/])hooks[\\/]aidlc-[a-z-]+\.ts$|(?:^|[\\/])aidlc-(?:kiro|codex|copilot|cursor)-adapter\.ts$/;
+const HOOK_FILE = /(?:^|[\\/])hooks[\\/]aidlc-[a-z-]+\.ts$|(?:^|[\\/])aidlc-(?:kiro|codex|copilot|cursor|antigravity)-adapter\.ts$/;
 const HOOK_MODULE = /(?:^|[\\/])(?:hooks[\\/]aidlc-[a-z-]+|aidlc-(?:record-human-turn|guard-switch))(?:\.ts)?$/;
 const HARNESS_CONTROL_ASSIGNMENT = /\b(?:AIDLC_SESSION_OVERRIDE|AIDLC_SESSION_OVERRIDE_SOURCE|AIDLC_SKIP_HUMAN_PRESENCE_GUARD|AIDLC_UNATTENDED|AIDLC_ALLOW_DIRECT_STATE_TRANSITIONS|AIDLC_STATE_TRANSITION_OWNER)=/;
 const SCRIPT_EXTENSION = /\.(?:ts|js|mjs|cjs|sh|py)$/;
@@ -1175,6 +1175,9 @@ function protectedInstalledPath(path: unknown, cwd: string, ancestors = false): 
   const entrypoints = [
     resolve(cwd, ".opencode/plugin/aidlc-opencode-adapter.ts"),
     resolve(cwd, ".github/hooks/aidlc.json"),
+    resolve(cwd, ".agents/hooks.json"),
+    resolve(cwd, "aidlc.settings.json"),
+    resolve(cwd, "aidlc.settings.local.json"),
     ...(isCompiledModuleUrl(import.meta.url) ? [process.execPath] : []),
   ];
   return entrypoints.some((entry) => absolute === entry || canonical === canonicalExistingPath(entry) ||
@@ -1200,7 +1203,7 @@ function isAuthoredDevelopmentPath(path: string, cwd: string): boolean {
 }
 
 function harnessInstallRoots(cwd: string): string[] {
-  const conventional = [".claude", ".codex", ".kiro", ".cursor", ".aidlc"]
+  const conventional = [".claude", ".codex", ".kiro", ".cursor", ".aidlc", ".agents"]
     .map((dir) => resolve(cwd, dir));
   try {
     const harnessDir = runtimeHarnessDir(cwd);

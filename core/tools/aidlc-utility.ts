@@ -3597,6 +3597,7 @@ export async function collectDoctorReport(
   const harness = harnessDir();
   const harnessName = runtimeHarnessName(projectDir, harness);
   const isCopilot = harnessName === "copilot";
+  const isAntigravity = harnessName === "antigravity";
   if (harness === ".claude") {
     // Claude Code: the EXPECTED roster is the set of aidlc-*.ts hooks that
     // settings.json actually wires (its `hooks` event blocks + the `statusLine`
@@ -3836,6 +3837,7 @@ export async function collectDoctorReport(
     ];
     if (harness === ".kiro") tsHooks.push("aidlc-kiro-adapter");
     if (harness === ".codex") tsHooks.push("aidlc-codex-adapter");
+    if (isAntigravity) tsHooks.push("aidlc-antigravity-adapter");
     if (isCopilot) {
       tsHooks.push(
         "aidlc-state-transition-guard",
@@ -3858,10 +3860,12 @@ export async function collectDoctorReport(
       });
     }
     if (harness === ".aidlc") {
-      // Two harnesses ship the .aidlc runtime dir; the adapter file names the
+      // Three harnesses ship the .aidlc runtime dir; the adapter file names the
       // flavor. Copilot: a hooks/ shim inside the engine dir (wired by
-      // .github/hooks/aidlc.json). opencode: a plugin in the .opencode shell.
+      // .github/hooks/aidlc.json). Antigravity: a hooks/ shim inside the engine dir
+      // (wired by .agents/hooks.json). opencode: a plugin in the .opencode shell.
       const copilotAdapter = join(projectDir, harness, "hooks", "aidlc-copilot-adapter.ts");
+      const antigravityAdapter = join(projectDir, harness, "hooks", "aidlc-antigravity-adapter.ts");
       if (isCopilot) {
         results.push({
           pass: existsSync(copilotAdapter),
@@ -3869,6 +3873,15 @@ export async function collectDoctorReport(
           fix: projectedFileRepair(
             "copilot",
             ".aidlc/hooks/aidlc-copilot-adapter.ts",
+          ),
+        });
+      } else if (isAntigravity) {
+        results.push({
+          pass: existsSync(antigravityAdapter),
+          label: "hooks/aidlc-antigravity-adapter.ts present (hook shim)",
+          fix: projectedFileRepair(
+            "antigravity",
+            ".aidlc/hooks/aidlc-antigravity-adapter.ts",
           ),
         });
       } else {
@@ -4044,6 +4057,19 @@ export async function collectDoctorReport(
       label: "project is in a git repository (Cursor may skip project hooks outside one)",
       fix: "run `git init` in this project, then fully restart Cursor and trust the folder",
     });
+  } else if (harness === ".aidlc" && isAntigravity) {
+    // Antigravity: the wiring config is .agents/hooks.json; skills ride .agents/skills.
+    for (const [file, what] of [
+      [".agents/hooks.json", "hook wiring"],
+      [".agents/skills/aidlc/SKILL.md", "/aidlc entry point"],
+      ["AGENTS.md", "onboarding + method imports"],
+    ] as const) {
+      results.push({
+        pass: existsSync(join(projectDir, file)),
+        label: `${file} present (${what})`,
+        fix: projectedFileRepair("antigravity", file),
+      });
+    }
   } else if (harness === ".aidlc") {
     // opencode: the wiring config is the project-root opencode.json/jsonc
     // (permissions + the method-include instructions glob) plus the /aidlc

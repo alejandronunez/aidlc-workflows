@@ -1223,6 +1223,14 @@ function rewriteNativeInvocations(
       if (hook === "statusline") return trustedCommand("statusline");
       return trustedCommand(`hook ${hook}`);
     });
+    const antigravityInlineHook = new RegExp(
+      String.raw`\bbun\s+-e\s+'[^']*(?:${harnessDir}|\.agents|hooks)/aidlc-antigravity-adapter\.ts[^']*'\s+([a-z0-9-]+)`,
+      "gi",
+    );
+    value = value.replace(
+      antigravityInlineHook,
+      (_match, target: string) => `${trustedCommand("hook antigravity-adapter")} ${target}`,
+    );
     value = value.replaceAll(
       `"bun \\\\${m.harnessDir}/tools/.*"`,
       `"${trustedCommand(".*")}"`,

@@ -21,11 +21,13 @@ const CODEX_DIST = join(REPO_ROOT, "dist", "codex");
 const COPILOT_DIST = join(REPO_ROOT, "dist", "copilot");
 const OPENCODE_DIST = join(REPO_ROOT, "dist", "opencode");
 const CURSOR_DIST = join(REPO_ROOT, "dist", "cursor");
+const ANTIGRAVITY_DIST = join(REPO_ROOT, "dist", "antigravity");
 
 const CODEX_BIN = process.env.AIDLC_CODEX_BIN ?? "codex";
 const COPILOT_BIN = process.env.AIDLC_COPILOT_BIN ?? "copilot";
 const OPENCODE_BIN = process.env.AIDLC_OPENCODE_BIN ?? "opencode";
 const CURSOR_BIN = process.env.AIDLC_CURSOR_BIN ?? "agent";
+const ANTIGRAVITY_BIN = process.env.AIDLC_ANTIGRAVITY_BIN ?? "agy";
 
 const AWS_PROFILE = process.env.AIDLC_CODEX_AWS_PROFILE ?? "codex";
 const AWS_REGION = process.env.AIDLC_CODEX_AWS_REGION ?? "us-east-2";
@@ -295,6 +297,46 @@ export function runCursor(proj: string, promptText: string): ExecResult {
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, PWD: proj },
       timeout: remainingOperationTimeoutMs(TEST_TIMEOUT_MS, { phase: "Cursor exec" }),
+    },
+  );
+  return {
+    rc: result.status ?? -1,
+    out: `${result.stdout ?? ""}\n${result.stderr ?? ""}`,
+  };
+}
+
+export interface AntigravityProject {
+  proj: string;
+  root: string;
+}
+
+// A scratch install: dist/antigravity copied verbatim (dotfiles included: the
+// engine at .aidlc/, native surfaces at .agents/, AGENTS.md and the aidlc/
+// memory tree at root), then git-initialized.
+export function setupAntigravityProject(): AntigravityProject {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "antigravity-run-")));
+  const proj = join(root, "proj");
+  cpSync(ANTIGRAVITY_DIST, proj, { recursive: true });
+  initializeGit(proj);
+  return { proj, root };
+}
+
+// `agy -p "<promptText>"` (or `agy "<promptText>"`) invokes the shipped
+// .agents/skills/aidlc/SKILL.md skill with the flag text forwarded inline.
+export function runAntigravity(proj: string, promptText: string, timeoutMs?: number): ExecResult {
+  const result = spawnSync(
+    ANTIGRAVITY_BIN,
+    [
+      "-p",
+      promptText,
+      "--dangerously-skip-permissions",
+    ],
+    {
+      cwd: proj,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, PWD: proj },
+      timeout: timeoutMs ?? remainingOperationTimeoutMs(TEST_TIMEOUT_MS, { phase: "Antigravity exec" }),
     },
   );
   return {

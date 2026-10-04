@@ -52,7 +52,7 @@ export function planE2eFile(
   if (kiroIde) resources.push("ide");
   // Preserve unknown serial constraints. Known driver families have worker-owned
   // projects/profiles/transports; a new serial family needs an explicit audit.
-  const knownSerialFamily = /^t-(?:tui-|acp-kiro-|exec-codex-|ide-kiro-|run-opencode-)/.test(name);
+  const knownSerialFamily = /^t-(?:tui-|acp-kiro-|exec-codex-|ide-kiro-|run-opencode-|run-cursor-|run-antigravity-)/.test(name);
   const timeout = /AIDLC_TEST_TIMEOUT\s*\?\?\s*["'](\d+)["']/.exec(code);
   const estimate = weights[name] ?? (timeout ? Number(timeout[1]) : 30);
   return {

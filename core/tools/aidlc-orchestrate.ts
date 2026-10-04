@@ -510,6 +510,41 @@ function engineChildEnv(
   };
 }
 
+const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
+const IS_COMPILED = isCompiledExecutable();
+
+function isAntigravityRoutingHarness(): boolean {
+  if (IS_COMPILED) {
+    const explicit = process.env.AIDLC_HARNESS_NAME?.trim();
+    return explicit === "antigravity";
+  }
+  const invokedScript = (process.argv[1] ?? "").replaceAll("\\", "/");
+  if (/(^|\/)\.aidlc\/tools\/aidlc-orchestrate\.ts$/.test(invokedScript)) {
+    try {
+      const parsed = JSON.parse(
+        readFileSync(join(TOOLS_DIR, "data", "harness.json"), "utf-8"),
+      ) as { name?: unknown };
+      return parsed.name === "antigravity";
+    } catch {
+      const explicit = process.env.AIDLC_HARNESS_NAME?.trim();
+      return explicit === "antigravity";
+    }
+  }
+  try {
+    const parsed = JSON.parse(
+      readFileSync(join(TOOLS_DIR, "data", "harness.json"), "utf-8"),
+    ) as { name?: unknown };
+    return parsed.name === "antigravity";
+  } catch {
+    const explicit = process.env.AIDLC_HARNESS_NAME?.trim();
+    return explicit === "antigravity";
+  }
+}
+
+function directiveMaxBytes(): number {
+  return isAntigravityRoutingHarness() ? 7500 : 28 * 1024;
+}
+
 // Print exactly one directive as JSON to stdout, after validating it against
 // the frozen contract. A malformed directive is a hard error (clean
 // boundaries), never a silent miss — we exit non-zero so a wiring bug surfaces
@@ -584,9 +619,10 @@ function prepareEmission(directive: Directive): PreparedEmission {
     process.exit(1);
   }
   const serialized = JSON.stringify(result.data);
-  if (Buffer.byteLength(serialized, "utf-8") > DIRECTIVE_MAX_BYTES) {
+  const maxBytes = directiveMaxBytes();
+  if (Buffer.byteLength(serialized, "utf-8") > maxBytes) {
     console.error(
-      `aidlc-orchestrate: refusing to emit a directive larger than ${DIRECTIVE_MAX_BYTES} bytes`,
+      `aidlc-orchestrate: refusing to emit a directive larger than ${maxBytes} bytes`,
     );
     process.exit(1);
   }
@@ -751,7 +787,7 @@ function attachLegacyKiroPlanApprovalChoices(
     );
   }
   const serialized = JSON.stringify(validated.data);
-  if (Buffer.byteLength(serialized, "utf-8") > DIRECTIVE_MAX_BYTES) {
+  if (Buffer.byteLength(serialized, "utf-8") > directiveMaxBytes()) {
     throw new Error(
       "legacy Plan Approval choices exceed the directive transport limit",
     );
@@ -1172,9 +1208,6 @@ function emit(requested: Directive): void {
 // none of which is importable (both files export zero CLI handlers). We resolve
 // the tools directory off THIS module's own location in source mode. A compiled
 // executable re-enters the public dispatcher grammar instead.
-const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
-const IS_COMPILED = isCompiledExecutable();
-
 function isKiroRoutingHarness(): boolean {
   if (IS_COMPILED) {
     const explicit = process.env.AIDLC_HARNESS_NAME?.trim();
@@ -2994,8 +3027,9 @@ function readConductorPersona(): string | null {
 // downgraded to a discretionary path read because it did not fit one tool
 // result. Every serialized directive stays below the common 28 KiB harness
 // floor; a fresh `next` deterministically restarts at part one.
-const DIRECTIVE_MAX_BYTES = 28 * 1024;
-const STEERING_TEXT_TARGET_BYTES = 20 * 1024;
+function steeringTextTargetBytes(): number {
+  return isAntigravityRoutingHarness() ? 3500 : 20 * 1024;
+}
 const CONTEXT_WARNINGS_MAX_BYTES = 6 * 1024;
 
 type RunStageRoute = {
@@ -4032,7 +4066,7 @@ function buildRunStageDirective(
   // always the conductor's first of that run regardless of state - attached
   // HERE (not by the caller after build) so the final run-stage is complete.
   const firstOfWorkflow = isFirstRunStageOfWorkflow(stateContent, node);
-  if (forcePersona || firstOfWorkflow) {
+  if (!isAntigravityRoutingHarness() && (forcePersona || firstOfWorkflow)) {
     const persona = readConductorPersona();
     if (persona !== null) directive.conductor_persona = persona;
   }
@@ -4131,7 +4165,7 @@ function steeringPieces(content: RuleContent[]): RuleContent[] {
       for (const text of splitRuleText(
         rule.path,
         section,
-        STEERING_TEXT_TARGET_BYTES,
+        steeringTextTargetBytes(),
       )) {
         pieces.push({ path: rule.path, text });
       }
@@ -4143,10 +4177,11 @@ function steeringPieces(content: RuleContent[]): RuleContent[] {
 function steeringChunks(content: RuleContent[]): RuleContent[][] {
   const chunks: RuleContent[][] = [];
   let current: RuleContent[] = [];
+  const targetBytes = steeringTextTargetBytes();
   for (const piece of steeringPieces(content)) {
     const candidate = [...current, piece];
     const bytes = Buffer.byteLength(JSON.stringify(candidate), "utf-8");
-    if (current.length > 0 && bytes > STEERING_TEXT_TARGET_BYTES) {
+    if (current.length > 0 && bytes > targetBytes) {
       chunks.push(current);
       current = [piece];
     } else {
@@ -4307,7 +4342,7 @@ function attachRulesIfTheyFit(
   const candidate = { ...directive, rules_content: content };
   if (
     Buffer.byteLength(JSON.stringify(candidate), "utf-8") >
-      DIRECTIVE_MAX_BYTES - INLINE_RULES_MARGIN_BYTES
+      directiveMaxBytes() - INLINE_RULES_MARGIN_BYTES
   ) {
     return false;
   }
@@ -4506,7 +4541,7 @@ function retainedTransportForCurrentState(
     next: steeringNextCommand(receipt),
     rules_content: chunks[(part as number) - 1],
   };
-  return Buffer.byteLength(JSON.stringify(load), "utf-8") > DIRECTIVE_MAX_BYTES
+  return Buffer.byteLength(JSON.stringify(load), "utf-8") > directiveMaxBytes()
     ? null
     : load;
 }
@@ -4637,7 +4672,7 @@ function transportRunStage(
     next: steeringNextCommand(minted.receipt),
     rules_content: chunks[index],
   };
-  if (Buffer.byteLength(JSON.stringify(load), "utf-8") > DIRECTIVE_MAX_BYTES) {
+  if (Buffer.byteLength(JSON.stringify(load), "utf-8") > directiveMaxBytes()) {
     return errorDirective(
       "A rule section could not be split below the directive transport limit. Shorten the affected heading section, then run a fresh `next`.",
     );
@@ -6851,7 +6886,7 @@ function attachBoundedWave(
     // batch merely to fit one directive.
     if (
       Buffer.byteLength(JSON.stringify(directive), "utf-8") >
-      DIRECTIVE_MAX_BYTES - 1024
+      directiveMaxBytes() - 1024
     ) {
       break;
     }
@@ -6861,7 +6896,7 @@ function attachBoundedWave(
     delete directive.wave;
     return (
       `Cannot emit the active wave for stage "${directive.stage}" within the ` +
-      `${DIRECTIVE_MAX_BYTES}-byte directive limit. Reduce the stage's path/context ` +
+      `${directiveMaxBytes()}-byte directive limit. Reduce the stage's path/context ` +
       "fan-out or process this workflow with a smaller unit batch."
     );
   }

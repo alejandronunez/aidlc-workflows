@@ -11,24 +11,59 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, wri
 import { dirname, join, relative } from "node:path";
 import type { EmitContext } from "../../scripts/manifest-types.ts";
 
-const HOOK_WIRING: Array<{ event: string; target: string; timeoutSec: number }> = [
-  { event: "SessionStart", target: "session-start", timeoutSec: 30 },
-  { event: "UserPromptSubmit", target: "record-human-turn", timeoutSec: 30 },
-  { event: "PreToolUse", target: "guard-tool-call", timeoutSec: 30 },
-  { event: "PostToolUse", target: "post-tool", timeoutSec: 30 },
-  { event: "PreCompact", target: "validate-state", timeoutSec: 30 },
-  { event: "SubagentStop", target: "log-subagent", timeoutSec: 30 },
-  { event: "Stop", target: "continue-workflow", timeoutSec: 60 },
-];
-
 function emitHooksJson(harnessDir: string, substituteToken: (v: string) => string): string {
-  const hooks: Record<string, Array<Record<string, unknown>>> = {};
-  for (const { event, target, timeoutSec } of HOOK_WIRING) {
-    const cmd = substituteToken(`bun ${harnessDir}/hooks/aidlc-antigravity-adapter.ts ${target}`);
-    hooks[event] ??= [];
-    hooks[event].push({ type: "command", command: cmd, timeoutSec });
-  }
-  return `${JSON.stringify({ version: 1, hooks }, null, 2)}\n`;
+  const runner = (target: string) =>
+    `bun -e 'const r=await Bun.stdin.text(),t=process.argv[1]||"${target}";let ws=process.cwd();try{const p=JSON.parse(r);if(p.workspacePaths?.[0])ws=p.workspacePaths[0];}catch{}const fs=require("fs"),path=require("path");let s=path.join(ws,"${harnessDir}/hooks/aidlc-antigravity-adapter.ts");if(!fs.existsSync(s)&&fs.existsSync("${harnessDir}/hooks/aidlc-antigravity-adapter.ts"))s=path.resolve("${harnessDir}/hooks/aidlc-antigravity-adapter.ts");try{const{run}=await import(s);await run(t,r);}catch(e){if(t==="guard-tool-call"||t==="pre-tool")console.log(JSON.stringify({decision:"deny",reason:"AI-DLC adapter failed: "+e.message}));else console.log("{}");}' ${target}`;
+
+  const hooks = {
+    "aidlc-pre-tool": {
+      "PreToolUse": [
+        {
+          "matcher": "*",
+          "hooks": [
+            {
+              "type": "command",
+              "command": substituteToken(runner("guard-tool-call")),
+              "timeout": 30,
+            },
+          ],
+        },
+      ],
+    },
+    "aidlc-post-tool": {
+      "PostToolUse": [
+        {
+          "matcher": "*",
+          "hooks": [
+            {
+              "type": "command",
+              "command": substituteToken(runner("post-tool")),
+              "timeout": 30,
+            },
+          ],
+        },
+      ],
+    },
+    "aidlc-pre-invocation": {
+      "PreInvocation": [
+        {
+          "type": "command",
+          "command": substituteToken(runner("pre-invocation")),
+          "timeout": 30,
+        },
+      ],
+    },
+    "aidlc-stop": {
+      "Stop": [
+        {
+          "type": "command",
+          "command": substituteToken(runner("continue-workflow")),
+          "timeout": 60,
+        },
+      ],
+    },
+  };
+  return `${JSON.stringify(hooks, null, 2)}\n`;
 }
 
 export default function emit(ctx: EmitContext): void {

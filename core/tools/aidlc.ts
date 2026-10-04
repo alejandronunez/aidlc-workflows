@@ -1197,9 +1197,10 @@ function toolsDir(): string {
   return dispatcherDir();
 }
 
-type AdapterHarness = "codex" | "copilot" | "cursor" | "kiro" | "kiro-ide";
+type AdapterHarness = "antigravity" | "codex" | "copilot" | "cursor" | "kiro" | "kiro-ide";
 
 const ADAPTER_HARNESS_LEAF: Record<AdapterHarness, string> = {
+  antigravity: ".aidlc",
   codex: ".codex",
   copilot: ".aidlc",
   cursor: ".cursor",
@@ -1212,6 +1213,7 @@ function isAdapterHarness(value: string): value is AdapterHarness {
 }
 
 function adapterFile(harness: AdapterHarness): string {
+  if (harness === "antigravity") return "aidlc-antigravity-adapter.ts";
   if (harness === "codex") return "aidlc-codex-adapter.ts";
   if (harness === "copilot") return "aidlc-copilot-adapter.ts";
   if (harness === "cursor") return "aidlc-cursor-adapter.ts";
@@ -1259,6 +1261,7 @@ export function resolveHookPath(
         ".kiro",
         ".codex",
         ".cursor",
+        ".aidlc",
       ].filter((value, index, values): value is string =>
         typeof value === "string" && value.length > 0 && values.indexOf(value) === index
       );
@@ -1699,8 +1702,9 @@ function handleRouteOnly(route: Route, argv: string[]): Action {
     // route (`aidlc engine hook cursor-adapter <target>`), and that wiring is
     // project-owned, so `aidlc update` alone cannot rewrite it. Resolve those
     // two shipped spellings to the adapter action they meant.
-    if (name === "cursor-adapter" || name === "copilot-adapter") {
-      const harness: AdapterHarness = name === "cursor-adapter" ? "cursor" : "copilot";
+    if (name === "cursor-adapter" || name === "copilot-adapter" || name === "antigravity-adapter") {
+      const harness: AdapterHarness =
+        name === "cursor-adapter" ? "cursor" : name === "antigravity-adapter" ? "antigravity" : "copilot";
       const target = argv[2];
       if (!target) return nounError("adapter", undefined);
       if (!isSafeName(target)) return nounError("adapter", target);
