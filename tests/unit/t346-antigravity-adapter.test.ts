@@ -374,4 +374,40 @@ describe("t346 Antigravity Hook Adapter", () => {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
+
+  test("13: post-tool with invoke_subagent logs subagent completion", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "aidlc-adapter-subagent-"));
+    try {
+      cpSync(join(REPO_ROOT, "dist", "antigravity", ".aidlc"), join(tmp, ".aidlc"), { recursive: true });
+      spawnSync(
+        process.execPath,
+        [join(tmp, ".aidlc", "tools", "aidlc.ts"), "engine", "intent", "create", "--scope", "express", "--label", "subagent-test"],
+        { cwd: tmp, encoding: "utf-8" },
+      );
+      const payload = {
+        session_id: "test-session-subagent",
+        workspacePaths: [tmp],
+        toolCall: {
+          name: "invoke_subagent",
+          args: {
+            Subagents: JSON.stringify([{
+              TypeName: "aidlc-developer-agent",
+              Role: "Developer Link 1",
+              Prompt: "Scan codebase",
+            }]),
+          },
+        },
+        tool_response: {
+          success: true,
+        },
+      };
+
+      const res = runAdapter("post-tool", payload, tmp);
+      expect(res.status).toBe(0);
+      expect(res.stdout).toContain("{}");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
 });
+

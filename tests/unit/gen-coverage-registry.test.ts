@@ -948,6 +948,7 @@ describe("mechanismsOf is body-derived (milestone 3)", () => {
     "unit/t344-swarm-checkpoint-retry.test.ts",
     "unit/t345-full-suite-workflow.test.ts",
     "unit/t345-sensor-detail-prune.test.ts",
+    "unit/t346-antigravity-adapter.test.ts",
     "unit/t349-audit-trail-guard.test.ts",
     "unit/t350-audit-read-commands.test.ts",
     "integration/t102.test.ts",

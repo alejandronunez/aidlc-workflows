@@ -161,6 +161,17 @@ export default function emit(ctx: EmitContext): void {
     }
   }
 
+  // (e) Persona custom subagents into .agents/agents/*.md
+  const agentsDir = join(distRoot, harnessDir, "agents");
+  if (existsSync(agentsDir)) {
+    for (const f of readdirSync(agentsDir).filter((x) => x.endsWith(".md")).sort()) {
+      emissions.push({
+        path: join(SHELL, "agents", f),
+        content: () => readFileSync(join(agentsDir, f), "utf-8"),
+      });
+    }
+  }
+
   // Clean-sweep the shell and write files
   rmSync(SHELL, { recursive: true, force: true });
   for (const { path, content } of emissions) {

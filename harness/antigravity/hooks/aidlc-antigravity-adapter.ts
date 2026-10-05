@@ -371,6 +371,9 @@ export async function run(
       if (tool_name === "ask_question") {
         runCore("aidlc-record-human-turn.ts", corePayload);
       }
+      if (tool_name === "invoke_subagent") {
+        runCore("aidlc-log-subagent.ts", makeCorePayload("SubagentStop"));
+      }
       runCore("aidlc-write-audit-log.ts", corePayload);
       runCore("aidlc-run-sensors.ts", corePayload);
       runCore("aidlc-rebuild-stage-graph.ts", corePayload);

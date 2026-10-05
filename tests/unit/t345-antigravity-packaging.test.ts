@@ -68,6 +68,10 @@ describe("t345 dist/antigravity packaging parity + shell shape", () => {
     expect(hooksJson["aidlc-post-tool"]?.PostToolUse).toBeDefined();
     expect(hooksJson["aidlc-pre-invocation"]?.PreInvocation).toBeDefined();
     expect(hooksJson["aidlc-stop"]?.Stop).toBeDefined();
+
+    expect(existsSync(join(SHELL, "agents"))).toBe(true);
+    const agentFiles = readdirSync(join(SHELL, "agents")).filter((x) => x.endsWith(".md"));
+    expect(agentFiles.length).toBe(14);
   });
 
   test("3: onboarding AGENTS.md is emitted in root", () => {
